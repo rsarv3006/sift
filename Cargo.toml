@@ -1,5 +1,5 @@
 [package]
-name = "sift"
+name = "code-sift"
 version = "0.1.0"
 edition = "2021"
 autobins = false
@@ -16,6 +16,9 @@ categories = ["development-tools", "command-line-utilities"]
 [features]
 default = []
 candle = ["dep:candle-core", "dep:candle-transformers", "dep:candle-nn", "dep:hf-hub", "dep:tokenizers"]
+
+[lib]
+name = "sift"
 
 [[bin]]
 name = "sift"

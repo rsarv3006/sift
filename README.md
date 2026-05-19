@@ -1,6 +1,6 @@
 # sift — Structural codebase index for LLM tooling
 
-[![Crates.io](https://img.shields.io/crates/v/sift.svg)](https://crates.io/crates/sift)
+[![Crates.io](https://img.shields.io/crates/v/code-sift.svg)](https://crates.io/crates/code-sift)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `sift` builds a language-agnostic structural index of a codebase using tree-sitter
@@ -27,8 +27,8 @@ Structural index is stable. Semantic embedding layer is new.
 ## Install
 
 ```bash
-cargo install sift                        # from crates.io
-cargo install --features candle sift      # with local embeddings
+cargo install code-sift                        # from crates.io
+cargo install --features candle code-sift      # with local embeddings
 ```
 
 Or build from source:
