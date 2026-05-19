@@ -1,0 +1,79 @@
+---
+description: Structural codebase index for LLM tooling — query definitions, call graphs, and imports via `sift query` without reading full files.
+globs: *
+---
+
+# sift: Codebase Structural Index
+
+sift builds a structural index of your codebase (symbols, call graphs, imports)
+using tree-sitter. It supports Rust, Python, JavaScript, TypeScript, TSX, Go,
+C, C++, Java, Ruby, and Zig.
+
+## Setup
+
+Install once:
+```bash
+cargo install code-sift
+```
+
+Then index the project you're working on:
+```bash
+sift index .
+```
+
+For semantic search (optional, requires Ollama or an API):
+```bash
+sift index --embed .
+SIFT_EMBED_BACKEND=api SIFT_EMBED_API_URL=http://localhost:11434/v1/embeddings sift query --embed "semantic <description>"
+```
+
+## When to use sift
+
+Use `sift query` instead of reading files directly when you need to:
+- Find where a symbol is defined
+- Trace callers/callees of a function
+- Find all implementations of an interface/trait
+- Search for symbols by name pattern
+- Find relevant code by describing what it does (semantic)
+
+sift returns minimal structured JSON — just enough to understand relationships,
+not full source code. If you need the actual implementation, read the file directly.
+
+## Available queries
+
+### `sift query "define <name>"`
+Find definitions matching name. Returns kind, file, line range, and doc comment.
+```json
+{"type":"definition","name":"parse_file","kind":"function","file":"src/parser.rs","line":154,"end_line":239,"doc":"/// Parse a source file into symbols"}
+```
+
+### `sift query "calls <name>"`
+Find all callers of functions named <name>.
+
+### `sift query "callees <name>"`
+Find all functions called by definitions named <name>.
+
+### `sift query "implements <name>"`
+Find implementations of a trait/interface.
+
+### `sift query "file <path>"`
+List all symbols defined in a given file.
+
+### `sift query "symbols matching <pattern>"`
+Case-insensitive substring search across all symbol names.
+
+### `sift query "files"`
+List all indexed files (relative paths).
+
+### `sift query "semantic <description>"`
+Semantic search (requires `--embed` flag during both index and query).
+Returns top-10 symbols ranked by cosine similarity with a `score` field.
+
+### Bare name fallback
+`sift query "parse_file"` is equivalent to `sift query "define parse_file"`.
+
+## Tips
+- Run `sift index .` from the project root once before querying
+- The index is stored in `.sift/index.bin`
+- Re-index when source files change significantly
+- `sift skill` prints the full tool definition for LLM system prompts
