@@ -8,8 +8,8 @@ default-run = "sift"
 description = "Structural codebase index for LLM tooling — query definitions, call graphs, and imports without embeddings."
 authors = ["rjs"]
 license = "MIT"
-repository = "https://github.com/anomalyco/coder-i-ardly-knew-er"
-homepage = "https://github.com/anomalyco/coder-i-ardly-knew-er"
+repository = "https://github.com/rsarv3006/sift"
+homepage = "https://github.com/rsarv3006/sift"
 keywords = ["codebase", "index", "tree-sitter", "llm", "code-search"]
 categories = ["development-tools", "command-line-utilities"]
 

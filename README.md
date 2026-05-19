@@ -33,8 +33,8 @@ cargo install --features candle code-sift      # with local embeddings
 
 Or build from source:
 ```bash
-git clone https://github.com/anomalyco/coder-i-ardly-knew-er
-cd coder-i-ardly-knew-er
+git clone https://github.com/rsarv3006/sift
+cd sift
 cargo build --release
 ./target/release/sift --help
 ```
