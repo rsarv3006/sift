@@ -58,6 +58,16 @@ fn cmd_index(path: &str, output: Option<&str>, embed: bool) -> Result<()> {
 
     let embedder: Option<AutoEmbedder> = if embed {
         let config = EmbedConfig::from_env();
+        let has_local = cfg!(feature = "candle");
+        let has_api = config.api_key.is_some()
+            || std::env::var("OPENAI_API_KEY").is_ok()
+            || std::env::var("SIFT_EMBED_API_URL").is_ok();
+        if !has_local && !has_api {
+            eprintln!("warn: --embed specified but no embedding backend configured");
+            eprintln!("  Set SIFT_EMBED_API_KEY for OpenAI/API embedding, or");
+            eprintln!("  set SIFT_EMBED_API_URL for a local API (e.g. Ollama), or");
+            eprintln!("  build with `--features candle` for local embeddings");
+        }
         match AutoEmbedder::new(&config) {
             Ok(e) => Some(e),
             Err(e) => {
@@ -182,7 +192,7 @@ fn cmd_skill() -> Result<()> {
 
 sift builds a structural index of your codebase (symbols, call graphs, imports)
 using tree-sitter. It supports Rust, Python, JavaScript, TypeScript, TSX, Go,
-C, C++, Java, Ruby, and Zig — with no API keys or network required.
+C, C++, Java, Ruby, Zig, and Bash — with no API keys or network required.
 
 ## When to use sift
 
@@ -218,10 +228,19 @@ List all symbols defined in a given file.
 Case-insensitive substring search across all symbol names.
 
 ### `sift query "semantic <description>"`
-Semantic search using embeddings (requires --embed flag and SIFT_EMBED_* config).
+Semantic search using embeddings (requires --embed on both index and query).
 Embeds the description and returns top-10 symbols ranked by cosine similarity.
 Each result includes a `score` field (0.0-1.0). Example:
+  sift index --embed .
   sift query --embed "semantic calculate monthly revenue"
+
+Config via env vars:
+  SIFT_EMBED_API_KEY       # API key (optional with local backends like Ollama)
+  SIFT_EMBED_API_URL       # default: https://api.openai.com/v1/embeddings
+  SIFT_EMBED_API_MODEL     # default: text-embedding-3-small
+  SIFT_EMBED_BACKEND       # "auto" (default), "api", or "local"
+  SIFT_EMBED_MODEL_PATH    # path to local model files (candle feature)
+If no backend is available, sift prints a warning explaining how to configure one.
 
 ### `sift query "files"`
 List all indexed files (relative paths).

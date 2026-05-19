@@ -7,7 +7,7 @@ globs: *
 
 sift builds a structural index of your codebase (symbols, call graphs, imports)
 using tree-sitter. It supports Rust, Python, JavaScript, TypeScript, TSX, Go,
-C, C++, Java, Ruby, and Zig.
+C, C++, Java, Ruby, Zig, and Bash.
 
 ## Setup
 
@@ -23,8 +23,26 @@ sift index .
 
 For semantic search (optional, requires Ollama or an API):
 ```bash
+# Index with embeddings
 sift index --embed .
-SIFT_EMBED_BACKEND=api SIFT_EMBED_API_URL=http://localhost:11434/v1/embeddings sift query --embed "semantic <description>"
+
+# Query semantically
+sift query --embed "semantic calculate monthly revenue"
+```
+
+Embedding configuration via env vars (all optional):
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `SIFT_EMBED_API_KEY` | — | API key for embedding endpoint |
+| `SIFT_EMBED_API_URL` | `https://api.openai.com/v1/embeddings` | API endpoint |
+| `SIFT_EMBED_API_MODEL` | `text-embedding-3-small` | Model name |
+| `SIFT_EMBED_BACKEND` | `auto` | `api`, `local` (candle feature), or `auto` |
+| `SIFT_EMBED_MODEL_PATH` | — | Local model path (candle feature) |
+
+If no backend is available, `sift` prints a warning telling you what to set.
+Example with Ollama (no API key needed):
+```bash
+SIFT_EMBED_API_URL=http://localhost:11434/v1/embeddings SIFT_EMBED_API_MODEL=nomic-embed-text sift index --embed .
 ```
 
 ## When to use sift

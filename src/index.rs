@@ -97,9 +97,14 @@ impl CodeIndex {
         if text_refs.is_empty() {
             return;
         }
-        if let Ok(embeddings) = embedder.embed(&text_refs) {
-            for (sym, emb) in self.symbols.iter_mut().zip(embeddings) {
-                sym.embedding = Some(emb);
+        match embedder.embed(&text_refs) {
+            Ok(embeddings) => {
+                for (sym, emb) in self.symbols.iter_mut().zip(embeddings) {
+                    sym.embedding = Some(emb);
+                }
+            }
+            Err(e) => {
+                eprintln!("warn: embedding computation failed: {:#}", e);
             }
         }
     }

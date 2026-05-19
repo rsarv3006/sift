@@ -15,8 +15,8 @@ embeddings for semantic ones.
 
 Structural index is stable. Semantic embedding layer is new.
 
-- Rust crate compiles, passes clippy (cognitive complexity ≤ 15), and 65 unit tests
-- Indexes Rust, Python, JavaScript, TypeScript, TSX, Go, C, C++, Java, Ruby, Zig via tree-sitter
+- Rust crate compiles, passes clippy (cognitive complexity ≤ 15), and 68 unit tests
+- Indexes Rust, Python, JavaScript, TypeScript, TSX, Go, C, C++, Java, Ruby, Zig, Bash via tree-sitter
 - Captures: function/struct/trait/enum/class/type/interface definitions, call sites (method calls, qualified calls), and import/include statements
 - Cross-file import resolution — imports link to the defining symbol's file/line/kind
 - Query commands: `define`, `calls`, `callees`, `implements`, `imports`, `importers`, `file`, `files`, `symbols matching`, `semantic`
@@ -48,7 +48,7 @@ cargo build --release
 - **LLM skill first**: sift is designed to be invoked by an LLM as a tool.
   `sift skill` outputs the tool definition for plugging into an LLM system prompt.
 - **Local by default, language-agnostic**: tree-sitter parsers for Rust, Python,
-  JavaScript, TypeScript, TSX, Go, C, C++, Java, Ruby, and Zig. No network required.
+  JavaScript, TypeScript, TSX, Go, C, C++, Java, Ruby, Zig, and Bash. No network required.
 - **Optional semantic search**: compute embeddings during indexing (`--embed`,
   `SIFT_EMBED_*` env vars) and query with `sift query semantic ...`.
 
@@ -92,14 +92,34 @@ Semantic results include a `score` field (cosine similarity). Results with doc c
  "doc":"/// Calculate monthly recurring revenue from the subscriptions list."}
 ```
 
-## Building
+## Embedding Configuration
+
+Semantic search is optional. When you pass `--embed`, sift uses the following
+env vars to find an embedding backend:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SIFT_EMBED_BACKEND` | `auto` | `api`, `local` (requires `candle` feature), or `auto` |
+| `SIFT_EMBED_API_KEY` | — | API key (not needed for Ollama/local endpoints) |
+| `SIFT_EMBED_API_URL` | `https://api.openai.com/v1/embeddings` | API endpoint |
+| `SIFT_EMBED_API_MODEL` | `text-embedding-3-small` | Model name for API backend |
+| `SIFT_EMBED_MODEL_PATH` | — | Path to local model files (`candle` feature only) |
+| `OPENAI_API_KEY` | — | Fallback if `SIFT_EMBED_API_KEY` is unset |
+
+If no embedding backend is available, `sift` prints a warning at index time
+telling you what to set. Example with Ollama (local, no API key):
 
 ```bash
-cargo build --release                       # structural only
-cargo build --release --features candle     # + local embeddings
+SIFT_EMBED_API_URL=http://localhost:11434/v1/embeddings \
+  SIFT_EMBED_API_MODEL=nomic-embed-text \
+  sift index --embed .
 ```
 
-Requires a C compiler (for tree-sitter grammar compilation) and Rust 1.75+.
+Build with candle for fully local embeddings:
+```bash
+cargo build --release --features candle
+sift index --embed .                         # uses candle automatically
+```
 
 ## Checking
 
@@ -150,7 +170,7 @@ sift skill  →  prints LLM tool definition
 - [x] 65 unit tests across parser, index, and query modules
 - [x] Cyclomatic/cognitive complexity checking (clippy + arborist, threshold 15)
 - [x] Semantic embedding layer — candle (local) + API fallback, computed during `sift index --embed`, queried via `sift query --embed "semantic ..."`
-- [x] Language support: 11 languages via tree-sitter
+- [x] Language support: 12 languages via tree-sitter (Rust, Python, JS/TS/TSX, Go, C, C++, Java, Ruby, Zig, Bash)
 - [x] Cross-file import resolution — each import links to the defining symbol's file/line/kind
 - [x] Agentic benchmark harness (`make bench`) — 25 correctness tasks across 2 synthetic codebases
 - [x] Embedding benchmark harness (`make bench-embed`) — 20 semantic search tasks, requires API embedder

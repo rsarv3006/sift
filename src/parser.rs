@@ -16,6 +16,7 @@ pub enum LanguageId {
     Java,
     Ruby,
     Zig,
+    Bash,
 }
 
 impl LanguageId {
@@ -33,6 +34,7 @@ impl LanguageId {
             "java" => Some(Self::Java),
             "rb" => Some(Self::Ruby),
             "zig" => Some(Self::Zig),
+            "sh" | "bash" => Some(Self::Bash),
             _ => None,
         }
     }
@@ -50,6 +52,7 @@ impl LanguageId {
             Self::Java => Language::new(tree_sitter_java::LANGUAGE),
             Self::Ruby => Language::new(tree_sitter_ruby::LANGUAGE),
             Self::Zig => Language::new(tree_sitter_zig::LANGUAGE),
+            Self::Bash => Language::new(tree_sitter_bash::LANGUAGE),
         }
     }
 
@@ -161,6 +164,9 @@ impl LanguageId {
                 (CaptureKind::Def(DefKind::Constant), "(variable_declaration name: (identifier) @name (container_kind const)) @node"),
                 (CaptureKind::Ref(RefKind::Call), "(call_expression function: (identifier) @name)"),
                 (CaptureKind::Ref(RefKind::Call), "(call_expression function: (field_expression field: (identifier) @name))"),
+            ],
+            Self::Bash => vec![
+                (CaptureKind::Def(DefKind::Function), "(function_definition name: (word) @name) @node"),
             ],
         }
     }
@@ -595,6 +601,8 @@ mod tests {
         assert_eq!(LanguageId::from_path(Path::new("foo.java")), Some(LanguageId::Java));
         assert_eq!(LanguageId::from_path(Path::new("foo.rb")), Some(LanguageId::Ruby));
         assert_eq!(LanguageId::from_path(Path::new("foo.zig")), Some(LanguageId::Zig));
+        assert_eq!(LanguageId::from_path(Path::new("foo.sh")), Some(LanguageId::Bash));
+        assert_eq!(LanguageId::from_path(Path::new("foo.bash")), Some(LanguageId::Bash));
         assert_eq!(LanguageId::from_path(Path::new("foo.md")), None);
         assert_eq!(LanguageId::from_path(Path::new("foo")), None);
     }
@@ -652,6 +660,31 @@ mod tests {
         assert_eq!(pf.definitions.len(), 1);
         assert_eq!(pf.definitions[0].name, "hello");
         assert_eq!(pf.definitions[0].kind, DefKind::Method);
+    }
+
+    #[test]
+    fn test_parse_bash_function() {
+        let path = Path::new("test.sh");
+        let pf = parse_source(path, LanguageId::Bash, "function hello {\n  echo world\n}\n").unwrap();
+        assert_eq!(pf.definitions.len(), 1);
+        assert_eq!(pf.definitions[0].name, "hello");
+        assert_eq!(pf.definitions[0].kind, DefKind::Function);
+    }
+
+    #[test]
+    fn test_parse_bash_function_parens() {
+        let path = Path::new("test.sh");
+        let pf = parse_source(path, LanguageId::Bash, "hello() {\n  echo world\n}\n").unwrap();
+        assert_eq!(pf.definitions.len(), 1);
+        assert_eq!(pf.definitions[0].name, "hello");
+        assert_eq!(pf.definitions[0].kind, DefKind::Function);
+    }
+
+    #[test]
+    fn test_parse_bash_no_false_positives_on_commands() {
+        let path = Path::new("test.sh");
+        let pf = parse_source(path, LanguageId::Bash, "echo hello\nls -la\nsource utils.sh\n").unwrap();
+        assert_eq!(pf.definitions.len(), 0);
     }
 
     #[test]
