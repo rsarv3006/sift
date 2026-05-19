@@ -1,0 +1,58 @@
+[package]
+name = "sift"
+version = "0.1.0"
+edition = "2021"
+autobins = false
+autobenches = false
+default-run = "sift"
+description = "Structural codebase index for LLM tooling — query definitions, call graphs, and imports without embeddings."
+authors = ["rjs"]
+license = "MIT"
+repository = "https://github.com/anomalyco/coder-i-ardly-knew-er"
+homepage = "https://github.com/anomalyco/coder-i-ardly-knew-er"
+keywords = ["codebase", "index", "tree-sitter", "llm", "code-search"]
+categories = ["development-tools", "command-line-utilities"]
+
+[features]
+default = []
+candle = ["dep:candle-core", "dep:candle-transformers", "dep:candle-nn", "dep:hf-hub", "dep:tokenizers"]
+
+[[bin]]
+name = "sift"
+path = "src/main.rs"
+
+[[bin]]
+name = "bench"
+path = "benches/bench.rs"
+
+[[bin]]
+name = "bench-embed"
+path = "benches/bench_embed.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+tree-sitter = "0.26"
+tree-sitter-rust = "0.24"
+tree-sitter-python = "0.25"
+tree-sitter-javascript = "0.25"
+tree-sitter-typescript = "0.23"
+tree-sitter-go = "0.25"
+tree-sitter-c = "0.23"
+tree-sitter-cpp = "0.23"
+tree-sitter-java = "0.23"
+tree-sitter-ruby = "0.23"
+tree-sitter-zig = "1.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bincode = "1"
+ignore = "0.4"
+rayon = "1"
+anyhow = "1"
+
+# Embedding
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+candle-core = { version = "0.8", optional = true }
+candle-transformers = { version = "0.8", optional = true }
+candle-nn = { version = "0.8", optional = true }
+hf-hub = { version = "0.4", optional = true }
+tokenizers = { version = "0.21", optional = true }

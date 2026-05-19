@@ -1,0 +1,66 @@
+{
+  "description": "Micro calculator library — 3 files, cross-module references",
+  "tasks": [
+    {
+      "id": "define-struct-calculator",
+      "query": "define Calculator",
+      "expected": {"type": "definition", "name": "Calculator", "kind": "struct", "file": "src/lib.rs"}
+    },
+    {
+      "id": "define-impl-calculator",
+      "query": "define Calculator",
+      "expected_any": [
+        {"type": "definition", "name": "Calculator", "kind": "impl", "file": "src/lib.rs"}
+      ]
+    },
+    {
+      "id": "define-enum-op",
+      "query": "define Op",
+      "expected": {"type": "definition", "name": "Op", "kind": "enum", "file": "src/ops.rs"}
+    },
+    {
+      "id": "define-trait-operation",
+      "query": "define Operation",
+      "expected": {"type": "definition", "name": "Operation", "kind": "trait", "file": "src/ops.rs"}
+    },
+    {
+      "id": "define-fn-add",
+      "query": "define add",
+      "expected_any": [
+        {"type": "definition", "name": "add", "kind": "function", "file": "src/ops.rs"}
+      ]
+    },
+    {
+      "id": "callers-of-divide",
+      "query": "calls divide",
+      "expected_min": 1
+    },
+    {
+      "id": "callees-of-evaluate",
+      "query": "callees evaluate",
+      "expected_names": ["add", "subtract", "multiply", "divide"]
+    },
+    {
+      "id": "implements-calculator",
+      "query": "implements Calculator",
+      "expected_min": 2,
+      "expected_any": [
+        {"name": "Calculator", "kind": "impl", "file": "src/lib.rs"}
+      ]
+    },
+    {
+      "id": "imports-from-ops",
+      "query": "imports src/lib.rs",
+      "expected_imports": [
+        {"symbol": "add", "resolved": true},
+        {"symbol": "Op", "resolved": true},
+        {"symbol": "Operation", "resolved": true}
+      ]
+    },
+    {
+      "id": "file-symbols-lib",
+      "query": "file src/lib.rs",
+      "expected_symbols": ["Calculator", "run_operation"]
+    }
+  ]
+}

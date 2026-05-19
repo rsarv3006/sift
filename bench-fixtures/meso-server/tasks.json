@@ -1,0 +1,91 @@
+{
+  "description": "Medium web server — 5 files, trait impls, cross-module references",
+  "tasks": [
+    {
+      "id": "define-server-struct",
+      "query": "define Server",
+      "expected": {"type": "definition", "name": "Server", "kind": "struct", "file": "src/main.rs"}
+    },
+    {
+      "id": "define-handler-trait",
+      "query": "define Handler",
+      "expected": {"type": "definition", "name": "Handler", "kind": "trait", "file": "src/handlers.rs"}
+    },
+    {
+      "id": "define-user-struct",
+      "query": "define User",
+      "expected": {"type": "definition", "name": "User", "kind": "struct", "file": "src/models.rs"}
+    },
+    {
+      "id": "define-role-enum",
+      "query": "define Role",
+      "expected_any": [
+        {"type": "definition", "name": "Role", "kind": "enum", "file": "src/models.rs"}
+      ]
+    },
+    {
+      "id": "define-jsonserializable-trait",
+      "query": "define JsonSerializable",
+      "expected": {"type": "definition", "name": "JsonSerializable", "kind": "trait", "file": "src/models.rs"}
+    },
+    {
+      "id": "define-database-struct",
+      "query": "define Database",
+      "expected": {"type": "definition", "name": "Database", "kind": "struct", "file": "src/db.rs"}
+    },
+    {
+      "id": "define-requestrouter-struct",
+      "query": "define RequestRouter",
+      "expected": {"type": "definition", "name": "RequestRouter", "kind": "struct", "file": "src/router.rs"}
+    },
+    {
+      "id": "callers-of-json_response",
+      "query": "calls json_response",
+      "expected_min": 5
+    },
+    {
+      "id": "callees-of-handle_request",
+      "query": "callees handle_request",
+      "expected_names": ["route", "handle", "not_found"]
+    },
+    {
+      "id": "implements-server",
+      "query": "implements Server",
+      "expected_min": 2,
+      "expected_any": [
+        {"name": "Server", "kind": "impl", "file": "src/main.rs"}
+      ]
+    },
+    {
+      "id": "implements-homehandler",
+      "query": "implements HomeHandler",
+      "expected": {"name": "HomeHandler", "kind": "impl", "file": "src/handlers.rs"}
+    },
+    {
+      "id": "file-symbols-db",
+      "query": "file src/db.rs",
+      "expected_symbols": ["Database"]
+    },
+    {
+      "id": "imports-in-main",
+      "query": "imports src/main.rs",
+      "expected_imports": [
+        {"symbol": "User", "resolved": true},
+        {"symbol": "Post", "resolved": true}
+      ]
+    },
+    {
+      "id": "imports-in-router",
+      "query": "imports src/router.rs",
+      "expected_imports": [
+        {"symbol": "Handler", "resolved": true},
+        {"symbol": "Database", "resolved": true}
+      ]
+    },
+    {
+      "id": "importers-of-database",
+      "query": "importers Database",
+      "expected_min": 2
+    }
+  ]
+}

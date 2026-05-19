@@ -1,0 +1,103 @@
+{
+  "description": "Embedding benchmark — micro calculator (3 files, arithmetic ops)",
+  "tasks": [
+    {
+      "id": "embed-add-numbers",
+      "description": "add numbers",
+      "query": "semantic add two numbers together",
+      "expected_any": [
+        {"name": "add", "kind": "function"},
+        {"name": "add", "kind": "fn"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-subtract",
+      "description": "subtract",
+      "query": "semantic subtract one value from another",
+      "expected_any": [
+        {"name": "subtract", "kind": "function"},
+        {"name": "subtract", "kind": "fn"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-multiply",
+      "description": "multiply",
+      "query": "semantic multiply two numbers together",
+      "expected_any": [
+        {"name": "multiply", "kind": "function"},
+        {"name": "multiply", "kind": "fn"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-divide",
+      "description": "divide",
+      "query": "semantic division operation dividing values",
+      "expected_any": [
+        {"name": "divide", "kind": "function"},
+        {"name": "divide", "kind": "fn"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-pow",
+      "description": "power exponent",
+      "query": "semantic scientific power exponentiation calculation",
+      "expected_any_names": [
+        "Pow", "evaluate", "ops"
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-run-tests",
+      "description": "test runner",
+      "query": "semantic run all unit tests and check results",
+      "expected_any": [
+        {"name": "run_tests"},
+        {"name": "test_calculator_add"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-assert-close",
+      "description": "floating point assertion",
+      "query": "semantic check floating point values are approximately equal",
+      "expected_any": [
+        {"name": "assert_close"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-calculator-evaluate",
+      "description": "calculator evaluation",
+      "query": "semantic evaluate arithmetic expression chain of operations",
+      "expected_any": [
+        {"name": "evaluate"},
+        {"name": "Calculator"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-apply-operation",
+      "description": "operation dispatch",
+      "query": "semantic apply an operation to two operands and return result",
+      "expected_any": [
+        {"name": "run_operation"},
+        {"name": "apply"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-calculator-new",
+      "description": "new calculator",
+      "query": "semantic create a new calculator instance with default configuration",
+      "expected_any": [
+        {"name": "new"},
+        {"name": "Calculator"}
+      ],
+      "expected_min": 1
+    }
+  ]
+}

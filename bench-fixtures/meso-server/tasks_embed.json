@@ -1,0 +1,102 @@
+{
+  "description": "Embedding benchmark — meso web server (5 files, handlers, routing, db)",
+  "tasks": [
+    {
+      "id": "embed-http-handler",
+      "description": "http handler",
+      "query": "semantic handle incoming HTTP request and return response",
+      "expected_any": [
+        {"name": "handle_request"},
+        {"name": "handle", "kind": "function"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-create-user",
+      "description": "user registration",
+      "query": "semantic register a new user with name and email address",
+      "expected_any": [
+        {"name": "create_user"},
+        {"name": "CreateUserHandler"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-get-user",
+      "description": "user lookup",
+      "query": "semantic look up a user by their unique identifier id",
+      "expected_any": [
+        {"name": "get_user"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-list-posts",
+      "description": "post listing",
+      "query": "semantic list all blog posts in the system",
+      "expected_any": [
+        {"name": "list_posts"},
+        {"name": "ListPostsHandler"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-database-connection",
+      "description": "database operations",
+      "query": "semantic database connection and CRUD operations for users and posts",
+      "expected_any": [
+        {"name": "Database"},
+        {"name": "connect"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-route-matching",
+      "description": "route matching",
+      "query": "semantic match URL path patterns against registered route table",
+      "expected_any": [
+        {"name": "route"},
+        {"name": "path_matches"},
+        {"name": "RequestRouter"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-json-response",
+      "description": "json response",
+      "query": "semantic format data as JSON response string with key value pairs",
+      "expected_any": [
+        {"name": "json_response"},
+        {"name": "to_json"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-not-found",
+      "description": "not found handler",
+      "query": "semantic return a 404 not found error response for unknown routes",
+      "expected_any": [
+        {"name": "not_found"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-home-handler",
+      "description": "home page",
+      "query": "semantic welcome api greeting response home",
+      "expected_any": [
+        {"name": "json_response"},
+        {"name": "HomeHandler"},
+        {"name": "home"}
+      ],
+      "expected_min": 1
+    },
+    {
+      "id": "embed-server-config",
+      "description": "server configuration",
+      "query": "semantic server struct with host port networking socket",
+      "expected_any_names": ["path_matches", "handle_request", "route", "Server", "new", "default", "RequestRouter", "start"],
+      "expected_min": 1
+    }
+  ]
+}
