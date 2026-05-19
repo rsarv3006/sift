@@ -1,6 +1,7 @@
 # sift — Structural codebase index for LLM tooling
 
 [![Crates.io](https://img.shields.io/crates/v/code-sift.svg)](https://crates.io/crates/code-sift)
+[![CI](https://github.com/rsarv3006/sift/actions/workflows/ci.yml/badge.svg)](https://github.com/rsarv3006/sift/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `sift` builds a language-agnostic structural index of a codebase using tree-sitter
