@@ -249,17 +249,10 @@ fn count_embedded(index_path: &Path) -> usize {
 }
 
 fn find_sift_bin(root: &Path) -> PathBuf {
-    let candidates = [
-        root.join("target").join("release").join("sift"),
-        root.join("target").join("debug").join("sift"),
-    ];
-    for c in &candidates {
-        if c.exists() {
-            return c.clone();
-        }
-    }
     let status = Command::new("cargo")
         .arg("build")
+        .arg("--bin")
+        .arg("sift")
         .arg("--features")
         .arg("candle")
         .current_dir(root)
