@@ -30,7 +30,22 @@ sift index --embed .
 sift query --embed "semantic calculate monthly revenue"
 ```
 
-Embedding configuration via env vars (all optional):
+Embedding configuration (checked in this order; later wins):
+
+1. `~/.config/sift/config.toml` (user-level)
+2. `.sift/config.toml` (project-level, relative to cwd)
+3. `SIFT_EMBED_*` environment variables
+
+Example `.sift/config.toml`:
+```toml
+[embed]
+backend = "api"
+api_url = "http://localhost:11434/v1/embeddings"
+api_model = "nomic-embed-text"
+```
+
+Env var reference (override config files):
+
 | Var | Default | Purpose |
 |-----|---------|---------|
 | `SIFT_EMBED_API_KEY` | — | API key for embedding endpoint |

@@ -1,6 +1,7 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
+use serde::Deserialize;
 
 /// Controls which embedding backend to use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,24 +29,128 @@ pub struct EmbedConfig {
     pub api_model: Option<String>,
 }
 
+/// TOML config file shape (all fields optional for merge semantics).
+#[derive(Debug, Default, Deserialize)]
+struct TomlConfig {
+    #[serde(default)]
+    embed: TomlEmbed,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct TomlEmbed {
+    backend: Option<String>,
+    model_path: Option<String>,
+    api_key: Option<String>,
+    api_url: Option<String>,
+    api_model: Option<String>,
+}
+
 impl EmbedConfig {
+    /// Load config from TOML files + env vars.
+    ///
+    /// Precedence (later wins):
+    ///   1. Hardcoded defaults
+    ///   2. `~/.config/sift/config.toml`
+    ///   3. `.sift/config.toml` (project-level, relative to cwd)
+    ///   4. `SIFT_EMBED_*` environment variables
+    pub fn load() -> Self {
+        let mut config = Self::defaults();
+
+        if let Some(cfg) = Self::load_toml(&Self::user_config_path()) {
+            config.apply_toml(&cfg);
+        }
+        if let Some(cfg) = Self::load_toml(&Self::project_config_path()) {
+            config.apply_toml(&cfg);
+        }
+
+        config.apply_env();
+        config
+    }
+
+    /// Read config from env vars only (legacy / programmatic use).
     pub fn from_env() -> Self {
+        let mut config = Self::defaults();
+        config.apply_env();
+        config
+    }
+
+    fn defaults() -> Self {
         Self {
-            backend: match std::env::var("SIFT_EMBED_BACKEND")
-                .as_deref()
-                .unwrap_or("auto")
-            {
+            backend: EmbedBackend::Auto,
+            model_path: None,
+            api_key: None,
+            api_url: None,
+            api_model: Some("text-embedding-3-small".into()),
+        }
+    }
+
+    fn user_config_path() -> PathBuf {
+        let base = std::env::var("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .ok()
+            .unwrap_or_else(|| {
+                let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+                PathBuf::from(home).join(".config")
+            });
+        base.join("sift").join("config.toml")
+    }
+
+    fn project_config_path() -> PathBuf {
+        std::env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join(".sift")
+            .join("config.toml")
+    }
+
+    fn load_toml(path: &Path) -> Option<TomlConfig> {
+        if !path.exists() {
+            return None;
+        }
+        let content = std::fs::read_to_string(path).ok()?;
+        toml::from_str(&content).ok()
+    }
+
+    fn apply_toml(&mut self, cfg: &TomlConfig) {
+        if let Some(ref backend) = cfg.embed.backend {
+            self.backend = match backend.as_str() {
                 "local" => EmbedBackend::Local,
                 "api" => EmbedBackend::Api,
                 _ => EmbedBackend::Auto,
-            },
-            model_path: std::env::var("SIFT_EMBED_MODEL_PATH").ok().map(Into::into),
-            api_key: std::env::var("SIFT_EMBED_API_KEY").ok(),
-            api_url: std::env::var("SIFT_EMBED_API_URL").ok(),
-            api_model: Some(
-                std::env::var("SIFT_EMBED_API_MODEL")
-                    .unwrap_or_else(|_| "text-embedding-3-small".into()),
-            ),
+            };
+        }
+        if let Some(ref v) = cfg.embed.model_path {
+            self.model_path = Some(v.into());
+        }
+        if let Some(ref v) = cfg.embed.api_key {
+            self.api_key = Some(v.clone());
+        }
+        if let Some(ref v) = cfg.embed.api_url {
+            self.api_url = Some(v.clone());
+        }
+        if let Some(ref v) = cfg.embed.api_model {
+            self.api_model = Some(v.clone());
+        }
+    }
+
+    fn apply_env(&mut self) {
+        if let Ok(v) = std::env::var("SIFT_EMBED_BACKEND") {
+            self.backend = match v.as_str() {
+                "local" => EmbedBackend::Local,
+                "api" => EmbedBackend::Api,
+                _ => EmbedBackend::Auto,
+            };
+        }
+        if let Ok(v) = std::env::var("SIFT_EMBED_MODEL_PATH") {
+            self.model_path = Some(v.into());
+        }
+        if let Ok(v) = std::env::var("SIFT_EMBED_API_KEY") {
+            self.api_key = Some(v);
+        }
+        if let Ok(v) = std::env::var("SIFT_EMBED_API_URL") {
+            self.api_url = Some(v);
+        }
+        if let Ok(v) = std::env::var("SIFT_EMBED_API_MODEL") {
+            self.api_model = Some(v);
         }
     }
 }
@@ -205,18 +310,26 @@ pub mod local {
         }
 
         fn mean_pool(&self, token_embeddings: &Tensor, attention_mask: &Tensor) -> Result<Tensor> {
-            let mask = attention_mask
-                .unsqueeze(2)?
-                .to_dtype(candle_core::DType::F32)?;
-            let sum_embeddings = (token_embeddings * &mask)?.sum(1)?;
-            let sum_mask = mask.sum(1)?;
-            let mean = (&sum_embeddings / &sum_mask)?;
-            Ok(mean)
+            let (_b, _s, h) = token_embeddings.shape().dims3()?;
+            let mask = attention_mask.to_dtype(candle_core::DType::F32)?;
+            let sum_emb = mask.unsqueeze(1)?.matmul(token_embeddings)?.squeeze(1)?;
+            let count = mask.sum(1)?;
+            let count_val = count.squeeze(0)?.to_vec0::<f32>()?;
+            if count_val == 0.0 {
+                return Ok(Tensor::zeros((1, h), candle_core::DType::F32, &self.device)?);
+            }
+            let result = (&sum_emb / &Tensor::full(count_val, (1, h), &self.device)?)?;
+            Ok(result)
         }
 
         fn normalize(&self, v: &Tensor) -> Result<Tensor> {
-            let norm = v.sqr()?.sum_keepdim(1)?.sqrt()?;
-            Ok((v / norm)?)
+            let (_b, h) = v.shape().dims2()?;
+            let sq_sum: f32 = v.sqr()?.sum(1)?.squeeze(0)?.to_vec0::<f32>()?;
+            let norm = sq_sum.sqrt();
+            if norm == 0.0 {
+                return Ok(v.clone());
+            }
+            Ok((v / &Tensor::full(norm, (1, h), &self.device)?)?)
         }
 
         pub fn embed_texts(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>> {
@@ -262,7 +375,7 @@ pub mod local {
                 let pooled = self.mean_pool(&output, &mask)?;
                 let normalized = self.normalize(&pooled)?;
 
-                let vec: Vec<f32> = normalized.to_vec1()?;
+                let vec: Vec<f32> = normalized.squeeze(0)?.to_vec1()?;
                 all_embeddings.push(vec);
             }
 

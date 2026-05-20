@@ -57,11 +57,11 @@ fn cmd_index(path: &str, output: Option<&str>, embed: bool) -> Result<()> {
     let out_path = resolve_output_path(&root, output);
 
     let embedder: Option<AutoEmbedder> = if embed {
-        let config = EmbedConfig::from_env();
+        let config = EmbedConfig::load();
         let has_local = cfg!(feature = "candle");
         let has_api = config.api_key.is_some()
             || std::env::var("OPENAI_API_KEY").is_ok()
-            || std::env::var("SIFT_EMBED_API_URL").is_ok();
+            || config.api_url.is_some();
         if !has_local && !has_api {
             eprintln!("warn: --embed specified but no embedding backend configured");
             eprintln!("  Set SIFT_EMBED_API_KEY for OpenAI/API embedding, or");
@@ -163,7 +163,7 @@ fn cmd_query(query_str: &str, index: Option<&str>, embed: bool) -> Result<()> {
     }
     let index = CodeIndex::load(&index_path)?;
     let engine = if embed {
-        let config = EmbedConfig::from_env();
+        let config = EmbedConfig::load();
         match AutoEmbedder::new(&config) {
             Ok(e) => QueryEngine::with_embedder(&index, Box::new(e)),
             Err(e) => {
@@ -234,13 +234,25 @@ Each result includes a `score` field (0.0-1.0). Example:
   sift index --embed .
   sift query --embed "semantic calculate monthly revenue"
 
-Config via env vars:
-  SIFT_EMBED_API_KEY       # API key (optional with local backends like Ollama)
-  SIFT_EMBED_API_URL       # default: https://api.openai.com/v1/embeddings
-  SIFT_EMBED_API_MODEL     # default: text-embedding-3-small
-  SIFT_EMBED_BACKEND       # "auto" (default), "api", or "local"
-  SIFT_EMBED_MODEL_PATH    # path to local model files (candle feature)
-If no backend is available, sift prints a warning explaining how to configure one.
+Config via env vars or config file (later wins):
+  - `~/.config/sift/config.toml`
+  - `.sift/config.toml` (project-level)
+  - `SIFT_EMBED_*` env vars
+
+  Example `.sift/config.toml`:
+    [embed]
+    backend = "api"
+    api_url = "http://localhost:11434/v1/embeddings"
+    api_model = "nomic-embed-text"
+
+  Env var reference:
+    SIFT_EMBED_API_KEY       # API key (optional with local backends like Ollama)
+    SIFT_EMBED_API_URL       # default: https://api.openai.com/v1/embeddings
+    SIFT_EMBED_API_MODEL     # default: text-embedding-3-small
+    SIFT_EMBED_BACKEND       # "auto" (default), "api", or "local"
+    SIFT_EMBED_MODEL_PATH    # path to local model files (candle feature)
+
+  If no backend is available, sift prints a warning explaining how to configure one.
 
 ### `sift query "files"`
 List all indexed files (relative paths).

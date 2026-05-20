@@ -94,8 +94,31 @@ Semantic results include a `score` field (cosine similarity). Results with doc c
 
 ## Embedding Configuration
 
-Semantic search is optional. When you pass `--embed`, sift uses the following
-env vars to find an embedding backend:
+Semantic search is optional. When you pass `--embed`, sift checks these
+sources (later wins):
+
+1. Hardcoded defaults
+2. `~/.config/sift/config.toml` (user-level)
+3. `.sift/config.toml` (project-level, relative to cwd)
+4. `SIFT_EMBED_*` environment variables
+
+Example project config (`.sift/config.toml`):
+
+```toml
+[embed]
+backend = "api"
+api_url = "http://10.0.0.39:11434/v1/embeddings"
+api_model = "nomic-embed-text"
+```
+
+Once set, commands work without env vars:
+
+```bash
+sift index --embed .                         # reads config
+sift query --embed "semantic handle http request"
+```
+
+Env vars override config files and are useful for per-invocation overrides:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -107,13 +130,7 @@ env vars to find an embedding backend:
 | `OPENAI_API_KEY` | — | Fallback if `SIFT_EMBED_API_KEY` is unset |
 
 If no embedding backend is available, `sift` prints a warning at index time
-telling you what to set. Example with Ollama (local, no API key):
-
-```bash
-SIFT_EMBED_API_URL=http://localhost:11434/v1/embeddings \
-  SIFT_EMBED_API_MODEL=nomic-embed-text \
-  sift index --embed .
-```
+telling you what to set.
 
 Build with candle for fully local embeddings:
 ```bash

@@ -1,6 +1,6 @@
 [package]
 name = "code-sift"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 autobins = false
 autobenches = false
@@ -52,6 +52,7 @@ bincode = "1"
 ignore = "0.4"
 rayon = "1"
 anyhow = "1"
+toml = "0.8"
 
 # Embedding
 reqwest = { version = "0.12", features = ["json", "blocking"] }
