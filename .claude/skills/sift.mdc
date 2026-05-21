@@ -105,8 +105,18 @@ Returns top-10 symbols ranked by cosine similarity with a `score` field.
 ### Bare name fallback
 `sift query "parse_file"` is equivalent to `sift query "define parse_file"`.
 
+### `sift watch`
+Start a file watcher that automatically re-indexes on source changes:
+```bash
+sift watch                              # watches current directory
+sift watch /path/to/project --embed     # + semantic embeddings on re-index
+sift watch --daemonize                  # fork to background (PID written to .sift/watcher.pid)
+```
+The index stays fresh without manual re-indexing. Query at any time.
+
 ## Tips
 - Run `sift index .` from the project root once before querying
 - The index is stored in `.sift/index.bin`
-- Re-index when source files change significantly
+- `sift query` auto-re-indexes if source files have changed since last index
+- `sift watch` keeps the index continuously fresh without manual re-indexing
 - `sift skill` prints the full tool definition for LLM system prompts

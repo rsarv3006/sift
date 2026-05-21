@@ -15,7 +15,7 @@ embeddings for semantic ones.
 
 Structural index is stable. Semantic embedding layer is new.
 
-- Rust crate compiles, passes clippy (cognitive complexity ≤ 15), and 68 unit tests
+- Rust crate compiles and passes clippy (cognitive complexity ≤ 15)
 - Indexes Rust, Python, JavaScript, TypeScript, TSX, Go, C, C++, Java, Ruby, Zig, Bash via tree-sitter
 - Captures: function/struct/trait/enum/class/type/interface definitions, call sites (method calls, qualified calls), and import/include statements
 - Cross-file import resolution — imports link to the defining symbol's file/line/kind
@@ -23,6 +23,11 @@ Structural index is stable. Semantic embedding layer is new.
 - `sift skill` outputs a ready-to-use LLM tool definition (OpenAI-compatible)
 - Semantic embeddings: API-based (OpenAI-compatible) always available; local inference via [candle](https://github.com/huggingface/candle) with the `candle` feature
 - Agentic benchmark harness in `bench-fixtures/` — 25/25 structural tasks pass (17x avg token savings), 20/20 embedding tasks pass (requires API embedder)
+- Incremental re-index: file mtimes tracked on each index, subsequent runs only re-parse changed files. Re-index is O(changed) not O(total)
+- Auto-re-index on stale `sift query`: transparently rebuilds the index when source files change
+- `sift watch` daemon: uses `notify` 7 to monitor filesystem and re-index automatically on every change (non-blocking thread, 500ms debounce)
+- Atomic index save: `.tmp` + `rename` prevents partial-read races; V2 magic prefix for backward compat
+- Unit tests covering parser, index, query, event filtering, and mtime collection
 - No functions excluded from the complexity threshold
 
 ## Install
@@ -69,6 +74,10 @@ sift query "file main.rs"              # Symbols in a file
 sift query "files"                     # All indexed files
 sift query "parse_file"                # Bare name -> define
 sift query --embed "semantic calculate revenue"  # Semantic search
+
+# Watch for changes and auto-re-index
+sift watch                              # watches current directory
+sift watch /path/to/project --embed     # + semantic embeddings on re-index
 
 # LLM tool definition
 sift skill
@@ -145,9 +154,10 @@ make check       # lint + test + complexity
 make lint        # cargo clippy (cognitive complexity threshold: 15)
 make test        # unit tests (parser, index, query)
 make complexity  # arborist-cli cyclomatic/cognitive complexity
-make bench       # synthetic codebase benchmark (25 correctness tasks)
-make bench-embed # embedding benchmark (20 semantic tasks, requires API embedder)
-make bench-real  # real-repo benchmark (requires cloned repo in /tmp/just)
+make bench              # synthetic codebase benchmark (25 correctness tasks)
+make bench-embed        # embedding benchmark (20 semantic tasks, requires API embedder)
+make bench-incremental  # incremental re-index benchmark (time savings vs full)
+make bench-real         # real-repo benchmark (requires cloned repo in /tmp/just)
 ```
 
 The synthetic benchmark (`make bench`) indexes fixtures in `bench-fixtures/` and
@@ -184,7 +194,7 @@ sift skill  →  prints LLM tool definition
 - [x] Language support: Rust, Python, JS/TS, Go, C, C++, Java, Ruby, Zig
 - [x] Import and method call capture
 - [x] Caller name resolution (span-based)
-- [x] 65 unit tests across parser, index, and query modules
+- [x] Unit tests across parser, index, query, event filtering, and mtime collection
 - [x] Cyclomatic/cognitive complexity checking (clippy + arborist, threshold 15)
 - [x] Semantic embedding layer — candle (local) + API fallback, computed during `sift index --embed`, queried via `sift query --embed "semantic ..."`
 - [x] Language support: 12 languages via tree-sitter (Rust, Python, JS/TS/TSX, Go, C, C++, Java, Ruby, Zig, Bash)
@@ -194,6 +204,9 @@ sift skill  →  prints LLM tool definition
 - [x] API key optional for embedding (works with Ollama, local LLMs, etc.)
 - [x] Doc comment extraction — captures `///`, `/** */`, `#`, `//` doc comments preceding definitions; included in JSON output and embedding text for better semantic search
 - [x] Binary index format (`bincode`) — serializes to `.sift/index.bin`, faster load/save than JSON for large codebases
+- [x] Incremental re-index — file mtimes tracked, re-parses only changed files
+- [x] Auto-re-index on stale query — transparent rebuild when source files change
+- [x] `sift watch` daemon — filesystem watcher for continuous auto-re-index
 
 ### Next
 

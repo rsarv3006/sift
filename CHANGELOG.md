@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.4.0] — 2026-05-21
+
+### Added
+- Incremental re-index — `CodeIndex.file_mtimes` tracks file modification times; only
+  re-parses changed files on subsequent index runs. New methods: `collect_mtimes`,
+  `classify_files`, `reconstruct_parsed_file`, `preserve_embeddings`.
+- Auto-re-index on stale `sift query` — transparently rebuilds the index when source
+  files have changed, with timing logged to stderr.
+- `sift watch` daemon — uses `notify` 7 with `RecommendedWatcher` and recursive
+  watching. 500ms debounce batching. Filters out `.sift/` paths, non-source files,
+  and Access/Other event kinds.
+- Non-blocking re-index in watch loop — re-index runs in a background thread so file
+  events are still collected during re-building.
+- `sift watch --daemonize` — fork to background with PID written to `.sift/watcher.pid`.
+- `CodeIndex::apply_changes()` — incremental index update that only touches changed
+  files instead of rebuilding from scratch. `reindex_incremental` now uses this,
+  making re-index O(changed) instead of O(total). For a 100-file project with 1
+  changed file: **0.44s vs 9.0s (20x faster)**.
+- `CodeIndex::compute_missing_embeddings()` — computes embeddings only for symbols
+  that don't already have one, avoiding redundant API calls.
+- Progress indicator for `sift index` — prints elapsed time every 3 seconds during
+  the parallel parse phase (visible on large codebases like the Linux kernel).
+
+### Fixed
+- `sift watch` no longer blocks the event loop during re-index (was blocking on
+  `collect_mtimes` which walks the full project tree).
+- `bench_embed::count_embedded` now uses `CodeIndex::load()` instead of raw
+  `bincode::deserialize()` — fixes V2 magic prefix incompatibility.
+
 ## [0.3.0] — 2026-05-20
 
 ### Added

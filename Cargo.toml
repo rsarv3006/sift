@@ -1,6 +1,6 @@
 [package]
 name = "code-sift"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 autobins = false
 autobenches = false
@@ -32,6 +32,10 @@ path = "benches/bench.rs"
 name = "bench-embed"
 path = "benches/bench_embed.rs"
 
+[[bin]]
+name = "bench-incremental"
+path = "benches/bench_incremental.rs"
+
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 tree-sitter = "0.26"
@@ -53,6 +57,8 @@ ignore = "0.4"
 rayon = "1"
 anyhow = "1"
 toml = "0.8"
+libc = "0.2"
+notify = "7"
 
 # Embedding
 reqwest = { version = "0.12", features = ["json", "blocking"] }

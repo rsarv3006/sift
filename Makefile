@@ -22,6 +22,9 @@ bench:
 bench-embed:
 	cargo run --bin bench-embed
 
+bench-incremental:
+	cargo run --bin bench-incremental
+
 bench-real: build
 	REPO=/tmp/just bash benches/real-repo.sh
 

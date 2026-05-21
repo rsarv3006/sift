@@ -241,8 +241,7 @@ fn count_embedded(index_path: &Path) -> usize {
     if !index_path.exists() {
         return 0;
     }
-    let bytes = fs::read(index_path).unwrap_or_default();
-    match bincode::deserialize::<sift::index::CodeIndex>(&bytes) {
+    match sift::index::CodeIndex::load(index_path) {
         Ok(idx) => idx.symbols.iter().filter(|s| s.embedding.is_some()).count(),
         Err(_) => 0,
     }
