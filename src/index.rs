@@ -353,6 +353,7 @@ impl CodeIndex {
             definitions,
             references,
             imports,
+            parse_duration: None,
         }
     }
 
@@ -837,6 +838,7 @@ mod tests {
                     name: name.to_string(),
                 })
                 .collect(),
+            parse_duration: None,
         }
     }
 
@@ -1265,7 +1267,7 @@ mod tests {
             notify::EventKind::Other,
         ];
         for kind in &skip_kinds {
-            let ev = make_event(kind.clone(), vec![PathBuf::from("src/main.rs")]);
+            let ev = make_event(*kind, vec![PathBuf::from("src/main.rs")]);
             assert!(!is_relevant_source_event(&ev), "should skip {:?}", kind);
         }
     }

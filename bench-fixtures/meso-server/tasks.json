@@ -86,6 +86,27 @@
       "id": "importers-of-database",
       "query": "importers Database",
       "expected_min": 2
+    },
+    {
+      "id": "pagination-first-page",
+      "query": "implements Handler",
+      "description": "implements Handler — limit=2, page 1",
+      "limit": 2,
+      "expected_min": 2,
+      "expected_any": [
+        {"type": "implementation", "name": "Handler", "kind": "impl", "file": "src/handlers.rs"}
+      ]
+    },
+    {
+      "id": "pagination-second-page",
+      "query": "implements Handler",
+      "description": "implements Handler — offset=2, limit=2, page 2",
+      "offset": 2,
+      "limit": 2,
+      "expected_min": 2,
+      "expected_any": [
+        {"type": "implementation", "name": "Handler", "kind": "impl", "file": "src/handlers.rs"}
+      ]
     }
   ]
 }

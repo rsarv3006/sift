@@ -1,9 +1,10 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::time::{Duration, Instant};
 use tree_sitter::{Language, Parser, Query, QueryCursor, StreamingIterator};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LanguageId {
     Rust,
     Python,
@@ -66,6 +67,7 @@ impl LanguageId {
                 (CaptureKind::Def(DefKind::Struct), "(struct_item name: (type_identifier) @name) @node"),
                 (CaptureKind::Def(DefKind::Trait), "(trait_item name: (type_identifier) @name) @node"),
                 (CaptureKind::Def(DefKind::Impl), "(impl_item type: (type_identifier) @name) @node"),
+                (CaptureKind::Def(DefKind::Impl), "(impl_item trait: (type_identifier) @name) @node"),
                 (CaptureKind::Def(DefKind::Enum), "(enum_item name: (type_identifier) @name) @node"),
                 (CaptureKind::Def(DefKind::TypeAlias), "(type_item name: (type_identifier) @name) @node"),
                 (CaptureKind::Def(DefKind::Constant), "(const_item name: (identifier) @name) @node"),
@@ -205,6 +207,18 @@ pub struct ParsedFile {
     pub definitions: Vec<ParsedDef>,
     pub references: Vec<ParsedRef>,
     pub imports: Vec<ParsedImport>,
+    /// Parse duration for this file, populated by the indexer for performance reporting.
+    pub parse_duration: Option<Duration>,
+}
+
+pub fn parse_file(path: &Path) -> Result<ParsedFile> {
+    let start = Instant::now();
+    let language = LanguageId::from_path(path).context("unsupported language")?;
+    let source = std::fs::read_to_string(path)
+        .with_context(|| format!("reading {}", path.display()))?;
+    let mut pf = parse_source(path, language, &source)?;
+    pf.parse_duration = Some(start.elapsed());
+    Ok(pf)
 }
 
 #[derive(Debug, Clone)]
@@ -226,13 +240,6 @@ pub struct ParsedRef {
 #[derive(Debug, Clone)]
 pub struct ParsedImport {
     pub name: String,
-}
-
-pub fn parse_file(path: &Path) -> Result<ParsedFile> {
-    let language = LanguageId::from_path(path).context("unsupported language")?;
-    let source = std::fs::read_to_string(path)
-        .with_context(|| format!("reading {}", path.display()))?;
-    parse_source(path, language, &source)
 }
 
 pub fn parse_source(path: &Path, language: LanguageId, source: &str) -> Result<ParsedFile> {
@@ -278,6 +285,7 @@ pub fn parse_source(path: &Path, language: LanguageId, source: &str) -> Result<P
         definitions,
         references,
         imports,
+        parse_duration: None,
     })
 }
 
@@ -836,5 +844,29 @@ mod tests {
     fn test_double_dash_comment_skipped() {
         let pf = parse_rust("x = 1;\nfn later() {}");
         assert!(pf.definitions[0].doc.is_none());
+    }
+
+    #[test]
+    fn test_parse_impl_trait() {
+        let pf = parse_rust("impl Operation for AddOp { fn apply(&self, a: f64, b: f64) -> f64 { a + b } }");
+        let impls: Vec<_> = pf.definitions.iter().filter(|d| d.kind == DefKind::Impl).map(|d| d.name.as_str()).collect();
+        assert!(impls.contains(&"Operation"), "expected Operation in impls, got {:?}", impls);
+        assert!(impls.contains(&"AddOp"), "expected AddOp in impls, got {:?}", impls);
+    }
+
+    #[test]
+    fn test_parse_file_sets_parse_duration() {
+        let dir = std::env::temp_dir().join("sift_test_parse_duration");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("test.rs");
+        std::fs::write(&path, "fn hello() -> i32 { 42 }").unwrap();
+
+        let pf = parse_file(&path).expect("parse_file should succeed");
+        assert!(pf.parse_duration.is_some(), "parse_duration should be set by parse_file");
+        let dur = pf.parse_duration.unwrap();
+        assert!(dur.as_nanos() > 0, "parse_duration should be > 0ns, got {:?}", dur);
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -22,7 +22,7 @@ Structural index is stable. Semantic embedding layer is new.
 - Query commands: `define`, `calls`, `callees`, `implements`, `imports`, `importers`, `file`, `files`, `symbols matching`, `semantic`
 - `sift skill` outputs a ready-to-use LLM tool definition (OpenAI-compatible)
 - Semantic embeddings: API-based (OpenAI-compatible) always available; local inference via [candle](https://github.com/huggingface/candle) with the `candle` feature
-- Agentic benchmark harness in `bench-fixtures/` — 25/25 structural tasks pass (17x avg token savings), 20/20 embedding tasks pass (requires API embedder)
+- Agentic benchmark harness in `bench-fixtures/` — 30/30 structural tasks pass (17x avg token savings), including pagination benchmarks; 20/20 embedding tasks pass (requires API embedder)
 - Incremental re-index: file mtimes tracked on each index, subsequent runs only re-parse changed files. Re-index is O(changed) not O(total)
 - Auto-re-index on stale `sift query`: transparently rebuilds the index when source files change
 - `sift watch` daemon: uses `notify` 7 to monitor filesystem and re-index automatically on every change (non-blocking thread, 500ms debounce)
@@ -199,7 +199,7 @@ sift skill  →  prints LLM tool definition
 - [x] Semantic embedding layer — candle (local) + API fallback, computed during `sift index --embed`, queried via `sift query --embed "semantic ..."`
 - [x] Language support: 12 languages via tree-sitter (Rust, Python, JS/TS/TSX, Go, C, C++, Java, Ruby, Zig, Bash)
 - [x] Cross-file import resolution — each import links to the defining symbol's file/line/kind
-- [x] Agentic benchmark harness (`make bench`) — 25 correctness tasks across 2 synthetic codebases
+- [x] Agentic benchmark harness (`make bench`) — 30 correctness tasks across 2 synthetic codebases, including pagination verification
 - [x] Embedding benchmark harness (`make bench-embed`) — 20 semantic search tasks, requires API embedder
 - [x] API key optional for embedding (works with Ollama, local LLMs, etc.)
 - [x] Doc comment extraction — captures `///`, `/** */`, `#`, `//` doc comments preceding definitions; included in JSON output and embedding text for better semantic search
@@ -207,10 +207,10 @@ sift skill  →  prints LLM tool definition
 - [x] Incremental re-index — file mtimes tracked, re-parses only changed files
 - [x] Auto-re-index on stale query — transparent rebuild when source files change
 - [x] `sift watch` daemon — filesystem watcher for continuous auto-re-index
+- [x] `implements` by trait name — `implements <name>` now finds impl blocks by both type name and trait name (second tree-sitter pattern captures `trait: (type_identifier)` on `impl_item`)
+- [x] `sift query` pagination — `--limit` and `--offset` flags for paginating large result sets
+- [x] Per-language indexing performance — `sift index` now prints per-language parse speed (files, avg ms/file, total CPU time) to help identify slow grammars
 
 ### Next
 
-- **`implements` by trait name** — currently `implements <name>` finds impl blocks by type name, not trait name. Need a second impl pattern that captures the trait being implemented.
-- **`sift query` streaming** — for very large result sets, support pagination or streaming JSON output.
-- **Per-language indexing performance** — measure parse rates per language on large real-world repos, identify slow grammars.
 - **Better semantic embeddings for code** — currently embeds symbol name + kind + doc text; consider code-specific models (e.g. starcoder2) or including function signature for richer context.

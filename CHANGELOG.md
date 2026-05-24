@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.5.0] — 2026-05-24
+
+### Added
+- `sift query` pagination — `--limit` and `--offset` flags for paginating large result
+  sets. Applied as `.skip(offset).take(limit)` on query results. Shows `showing results
+  X-Y of Z` on stderr when results exceed slice size.
+- `implements <name>` now matches impl blocks by trait name as well as type name —
+  second tree-sitter pattern captures `(impl_item trait: (type_identifier) @name)`.
+- Per-language indexing performance — `sift index` prints per-language parse speed
+  (files, avg ms/file, total CPU time) to help identify slow grammars.
+- `parse_duration` field on `ParsedFile` — populated by `parse_file()` via
+  `Instant::now()`, used by the per-language speed reporter.
+- Pagination unit tests — 7 tests in `query.rs::paginate()` covering limit, offset,
+  offset+limit, offset-beyond-total, limit=0, limit-exceeds-total, disjoint-pages.
+- Pagination benchmark tasks — 4 tasks across `micro-calc` (callees evaluate page 1/2)
+  and `meso-server` (implements Handler page 1/2) — 30/30 structural tasks total.
+- `test_parse_file_sets_parse_duration` — verifies `parse_file()` sets
+  `parse_duration` to `Some(Duration > 0)`.
+- `test_parse_impl_trait` — verifies `impl Operation for AddOp` captures both
+  `Operation` and `AddOp`.
+- Generic `benches/real-repo.sh` — language-agnostic, uses `find` with all 19 sift
+  extensions; `QUERIES=` env var for override; handles "No results" gracefully.
+- `make bench-real-linux` target — runs real-repo benchmark against
+  `$(HOME)/dev/THIRDPARTY/linux`.
+
+### Changed
+- `LanguageId` derives `Hash` for `HashMap`-based per-language statistics.
+- `parse_file()` now wraps `parse_source()` with timing instead of calling it inline.
+- Bench fixture task count: 26 → 30 (4 new pagination tasks).
+- `benches/real-repo.sh` defaults to release build.
+- `README.md` — moved completed features (`implements` by trait, pagination,
+  per-language speed) from "Next" to "Done".
+
+### Fixed
+- Clippy `clone_on_copy` warning in `src/index.rs:1270` (`make_event(kind.clone())`
+  → `make_event(*kind)`).
+
 ## [0.4.0] — 2026-05-21
 
 ### Added

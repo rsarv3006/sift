@@ -28,6 +28,9 @@ bench-incremental:
 bench-real: build
 	REPO=/tmp/just bash benches/real-repo.sh
 
+bench-real-linux: build
+	REPO=$(HOME)/dev/THIRDPARTY/linux bash benches/real-repo.sh
+
 clean:
 	cargo clean
 	rm -rf .sift/

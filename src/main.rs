@@ -12,6 +12,46 @@ use std::time::{Duration, Instant, UNIX_EPOCH};
 
 use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 
+fn report_parse_speed(
+    parsed: &[sift::parser::ParsedFile],
+    wall_clock: Duration,
+) {
+    let mut per_lang: HashMap<LanguageId, (usize, Duration)> = HashMap::new();
+    for pf in parsed {
+        let dur = pf.parse_duration.unwrap_or(Duration::ZERO);
+        let entry = per_lang.entry(pf.language).or_default();
+        entry.0 += 1;
+        entry.1 += dur;
+    }
+
+    let mut sorted: Vec<_> = per_lang.into_iter().collect();
+    sorted.sort_by_key(|a| std::cmp::Reverse(a.1 .1));
+
+    for (lang, (count, total)) in &sorted {
+        let avg_ms = total.as_secs_f64() * 1000.0 / (*count).max(1) as f64;
+        eprintln!(
+            "  {:>8}: {:>4} files, {:>7.1} ms avg, {:>7.2}s cpu",
+            format!("{:?}", lang).to_lowercase(),
+            count,
+            avg_ms,
+            total.as_secs_f64(),
+        );
+    }
+
+    let total = parsed.len();
+    let rate = if wall_clock.as_secs_f64() > 0.0 {
+        total as f64 / wall_clock.as_secs_f64()
+    } else {
+        0.0
+    };
+    eprintln!(
+        "  Total: {} files in {:.3}s wall ({:.1} files/s)",
+        total,
+        wall_clock.as_secs_f64(),
+        rate,
+    );
+}
+
 #[derive(Parser)]
 #[command(name = "sift", version, about = "Structural codebase index for LLM tooling")]
 enum Cli {
@@ -34,6 +74,12 @@ enum Cli {
         /// Path to the index (default: .sift/index.bin)
         #[arg(short, long)]
         index: Option<String>,
+        /// Maximum number of results to return
+        #[arg(long, default_value_t = 100)]
+        limit: usize,
+        /// Number of results to skip before returning
+        #[arg(long, default_value_t = 0)]
+        offset: usize,
         /// Enable semantic search (uses SIFT_EMBED_* env vars)
         #[arg(long)]
         embed: bool,
@@ -56,7 +102,7 @@ enum Cli {
 fn main() -> Result<()> {
     match Cli::parse() {
         Cli::Index { path, output, embed } => cmd_index(&path, output.as_deref(), embed),
-        Cli::Query { query, index, embed } => cmd_query(&query, index.as_deref(), embed),
+        Cli::Query { query, index, limit, offset, embed } => cmd_query(&query, index.as_deref(), limit, offset, embed),
         Cli::Watch { path, embed, daemonize } => cmd_watch(path.as_deref(), embed, daemonize),
         Cli::Skill => cmd_skill(),
     }
@@ -285,6 +331,8 @@ fn cmd_index(path: &str, output: Option<&str>, embed: bool) -> Result<()> {
     if parsed.is_empty() {
         anyhow::bail!("no files could be parsed in {}", root.display());
     }
+    eprintln!("Parsing speed:");
+    report_parse_speed(&parsed, parse_start.elapsed());
     println!("Parsed {} files in {:?}", parsed.len(), start.elapsed());
 
     let mut index = CodeIndex::build(
@@ -309,7 +357,7 @@ fn cmd_index(path: &str, output: Option<&str>, embed: bool) -> Result<()> {
     Ok(())
 }
 
-fn cmd_query(query_str: &str, index: Option<&str>, embed: bool) -> Result<()> {
+fn cmd_query(query_str: &str, index: Option<&str>, limit: usize, offset: usize, embed: bool) -> Result<()> {
     let query_str = query_str.trim();
     if query_str.is_empty() {
         anyhow::bail!("query string is empty — try: define <name>, calls <name>, file <path>, etc.");
@@ -363,13 +411,30 @@ fn cmd_query(query_str: &str, index: Option<&str>, embed: bool) -> Result<()> {
         sift::query::QueryEngine::new(&index)
     };
     let results = engine.execute(query_str);
+    let total = results.len();
 
-    if results.is_empty() {
+    let slice: Vec<_> = results
+        .into_iter()
+        .skip(offset)
+        .take(limit)
+        .collect();
+
+    if slice.is_empty() {
         println!("No results");
         return Ok(());
     }
 
-    let json = serde_json::to_string_pretty(&results)?;
+    if total > slice.len() {
+        let end = offset + slice.len();
+        eprintln!(
+            "[sift] showing results {}-{} of {}",
+            offset + 1,
+            end,
+            total
+        );
+    }
+
+    let json = serde_json::to_string_pretty(&slice)?;
     println!("{json}");
 
     Ok(())
@@ -670,6 +735,12 @@ Config via env vars or config file (later wins):
 
 ### `sift query "files"`
 List all indexed files (relative paths).
+
+### Pagination
+
+All query commands support `--limit` and `--offset` for paginating
+large result sets:
+  sift query --limit 5 --offset 10 "define Parser"
 
 ## JSON output format
 

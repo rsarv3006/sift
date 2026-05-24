@@ -49,6 +49,14 @@
       ]
     },
     {
+      "id": "implements-operation",
+      "query": "implements Operation",
+      "expected_min": 3,
+      "expected_any": [
+        {"name": "Operation", "kind": "impl", "file": "src/ops.rs"}
+      ]
+    },
+    {
       "id": "imports-from-ops",
       "query": "imports src/lib.rs",
       "expected_imports": [
@@ -61,6 +69,21 @@
       "id": "file-symbols-lib",
       "query": "file src/lib.rs",
       "expected_symbols": ["Calculator", "run_operation"]
+    },
+    {
+      "id": "pagination-first-page",
+      "query": "callees evaluate",
+      "description": "callees evaluate — limit=2, page 1",
+      "limit": 2,
+      "expected_names": ["add", "subtract"]
+    },
+    {
+      "id": "pagination-second-page",
+      "query": "callees evaluate",
+      "description": "callees evaluate — offset=2, limit=2, page 2",
+      "offset": 2,
+      "limit": 2,
+      "expected_names": ["multiply", "divide"]
     }
   ]
 }

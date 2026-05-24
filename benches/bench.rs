@@ -29,6 +29,10 @@ struct Task {
     expected_symbols: Option<Vec<String>>,
     expected_imports: Option<Vec<ExpectedImport>>,
     expected_min: Option<usize>,
+    /// Pagination limit for this task query.
+    limit: Option<usize>,
+    /// Pagination offset for this task query.
+    offset: Option<usize>,
 }
 
 #[derive(serde::Deserialize)]
@@ -124,12 +128,16 @@ fn main() {
 
         for task in &tasks.tasks {
             let task_start = Instant::now();
-            let query_out = Command::new(&sift_bin)
-                .arg("query")
-                .arg(&task.query)
-                .current_dir(&fixture)
-                .output()
-                .expect("sift query failed");
+            let mut cmd = Command::new(&sift_bin);
+            cmd.arg("query").current_dir(&fixture);
+            if let Some(limit) = task.limit {
+                cmd.arg("--limit").arg(limit.to_string());
+            }
+            if let Some(offset) = task.offset {
+                cmd.arg("--offset").arg(offset.to_string());
+            }
+            cmd.arg(&task.query);
+            let query_out = cmd.output().expect("sift query failed");
             let _query_time = task_start.elapsed();
 
             let sift_output = String::from_utf8_lossy(&query_out.stdout);
